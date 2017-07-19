@@ -1,22 +1,18 @@
 {
-    "name" : "mediasilo/phoenix-php-sdk",
+    "name" : "h3christophe/phoenix-php-sdk",
     "autoload": {
         "psr-0": {
             "mediasilo\\": "src/"
         },
-        "files": [
-            "src/mediasilo/lib/shims.php"
+        "classmap": [
+            "src/"
         ]
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/mdelano/oauth-php"
-        }
-    ],
-    "require" : {
-        "mdelano/oauth-php": "0.0.14"
+    
+    "require":{
+        "php": ">=5.6"      
     },
+    
     "require-dev": {
         "phpunit/phpunit": "3.7.*"
     }

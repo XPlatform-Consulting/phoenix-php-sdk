@@ -1,6 +1,6 @@
 <?php
 
-namespace mediasilo\comment;
+namespace mediasilo\comment\quicklink;
 
 use mediasilo\model\Serializable;
 

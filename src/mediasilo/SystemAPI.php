@@ -4,12 +4,11 @@ namespace mediasilo;
 
 use mediasilo\MediaSiloAPI;
 use mediasilo\http\WebClient;
-use mediasilo\http\oauth\TwoLeggedOauthClient;
-use mediasilo\http\oauth\OAuthException;
 use mediasilo\config\Meta;
 use mediasilo\http\MediaSiloResourcePaths;
 use mediasilo\user\PasswordResetRequest;
 use mediasilo\user\PasswordReset;
+
 
 class SystemAPI extends MediaSiloAPI
 {
@@ -27,60 +26,6 @@ class SystemAPI extends MediaSiloAPI
         $instance->webClient = WebClient::createFromSession($session, $host, $baseUrl);
         $instance->init();
         return $instance;
-    }
-
-    public static function createFromApplicationConsumer($consumerKey, $consumerSecret, $baseUrl = Meta::API_ROOT_URL) {
-        $instance = new self();
-        $instance->consumerKey = $consumerKey;
-        $instance->consumerSecret = $consumerSecret;
-        $instance->baseUrl = $baseUrl;
-        $instance->webClient = TwoLeggedOauthClient::create2LegClient($consumerKey, $consumerSecret, $baseUrl);
-        $instance->proxyInit();
-        return $instance;
-    }
-
-    public function setOAuthHostContext($hostname) {
-        if ($this->webClient instanceof TwoLeggedOauthClient) {
-            $this->webClient->setHostContext($hostname);
-        }
-    }
-
-    public function unsetOAuthHostContext() {
-        if ($this->webClient instanceof TwoLeggedOauthClient) {
-            $this->webClient->clearHostContext();
-        }
-    }
-
-    public function getAccessToken($username, $password, $hostname) {
-        $params = array('username' => $username, 'password'=>$password, 'hostname' => $hostname, 'grant_type' => 'password');
-        $response = json_decode($this->webClient->getAccessToken($params));
-        $this->webClient = TwoLeggedOauthClient::create2LegProxyCredsClient($this->consumerKey, $this->consumerSecret, $response->id, $this->baseUrl);
-        $this->init();
-        return $response->id;
-    }
-
-    public function getAccessTokenBySession($sessionKey, $hostname) {
-        $params = array('session' => $sessionKey, 'hostname' => $hostname, 'grant_type' => 'password');
-        $response = json_decode($this->webClient->getAccessToken($params));
-        $this->webClient = TwoLeggedOauthClient::create2LegProxyCredsClient($this->consumerKey, $this->consumerSecret, $response->id, $this->baseUrl);
-        $this->init();
-        return $response->id;
-    }
-
-    public function setAccessToken($accessToken) {
-        if(!isset($this->consumerKey)) {
-            throw new OAuthException("There is no consumer credentials set for the API instance. An access token cannot be used without consumer credentials.");
-        }
-        $this->webClient = TwoLeggedOauthClient::create2LegProxyCredsClient($this->consumerKey, $this->consumerSecret, $accessToken, $this->baseUrl);
-        $this->init();
-    }
-
-    public function unsetAccessToken() {
-        if(!isset($this->consumerKey)) {
-            throw new OAuthException("There is no consumer credentials set for the API instance. An access token cannot be used without consumer credentials.");
-        }
-        $this->webClient = TwoLeggedOauthClient::create2LegClient($this->consumerKey, $this->consumerSecret, $this->baseUrl);
-        $this->proxyInit();
     }
 
     /**
@@ -117,6 +62,7 @@ class SystemAPI extends MediaSiloAPI
         $clientResponse = json_decode($this->webClient->GET($resourcePath)->getBody());
         return $clientResponse;
     }
+    
     /**
      * Get a list of tracked events specified by the events list and filtered by a quicklink id
      * @param String $quicklinkid
@@ -128,35 +74,6 @@ class SystemAPI extends MediaSiloAPI
         $resourcePath = sprintf(MediaSiloResourcePaths::QUICKLINK_ANALYTICS, $quicklinkId, join(",", $events));
         $resourcePath = sprintf("%s?data.mediasiloUserId=%s", $resourcePath, $userId);
         $resourcePath = sprintf("%s&%s", $resourcePath, $query);
-        $clientResponse = json_decode($this->webClient->GET($resourcePath)->getBody());
-        return $clientResponse;
-    }
-
-    /**
-     * Get a list of tracked events specified by the events list and filtered by a quicklink id
-     * @param String $quicklinkid
-     * @param Array $events
-     * @return Array[Object]
-     */
-    public function getQuickLinkAnalytics($quicklinkId, $events, $query)
-    {
-        $resourcePath = sprintf(MediaSiloResourcePaths::QUICKLINK_ANALYTICS, $quicklinkId, join(",", $events));
-        $resourcePath = sprintf("%s?%s", $resourcePath, $query);
-        $clientResponse = json_decode($this->webClient->GET($resourcePath));
-        return $clientResponse;
-    }
-
-    /**
-     * Get a list of tracked events specified by the events list and filtered by a quicklink id
-     * @param String $quicklinkid
-     * @param Array $events
-     * @return Array[Object]
-     */
-    public function getUserQuickLinkAnalytics($quicklinkId, $userId, $events, $query)
-    {
-        $resourcePath = sprintf(MediaSiloResourcePaths::QUICKLINK_ANALYTICS, $quicklinkId, join(",", $events));
-        $resourcePath = sprintf("%s?data.mediasiloUserId=%s", $resourcePath, $userId);
-        $resourcePath = sprintf("%s&%s", $resourcePath, $query)
         $clientResponse = json_decode($this->webClient->GET($resourcePath));
         return $clientResponse;
     }

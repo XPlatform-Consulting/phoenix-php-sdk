@@ -2,7 +2,7 @@
 
 namespace mediasilo\http;
 
-use mediasilo\config\Meta;
+use mediasilo\config\Meta as META;
 use mediasilo\http\HttpResponseHandler;
 
 class WebClient {
@@ -52,6 +52,7 @@ class WebClient {
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
+            CURLOPT_TIMEOUT => 20,
             CURLOPT_HTTPHEADER => $this->getRequestHeaders(),
             CURLOPT_RETURNTRANSFER => 1,
             CURLOPT_HEADER => 1,
@@ -77,6 +78,7 @@ class WebClient {
     public function post($path, $payload) {
         $curl = curl_init();
         curl_setopt_array($curl, array(
+            CURLOPT_TIMEOUT => 20,
             CURLOPT_HTTPHEADER => $this->getRequestHeaders(),
             CURLOPT_POST => 1,
             CURLOPT_POSTFIELDS => $payload,
@@ -110,6 +112,7 @@ class WebClient {
             CURLOPT_INFILE => $fp,
             CURLOPT_INFILESIZE, strlen($payload),
             CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_TIMEOUT => 20,
             CURLOPT_URL => (rtrim($this->baseUrl, "/")."/".rtrim(ltrim($path, "/"))),
             CURLOPT_USERAGENT => $this->host.":".$this->username." PHP SDK Version ".META::MEDIASILO_SDK_VERSION
         ));
@@ -125,7 +128,8 @@ class WebClient {
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
-            CURLOPT_HTTPHEADER => $this->getRequestHeaders(),
+            CURLOPT_TIMEOUT => 20,
+            CURLOPT_HTTPHEADER => $this->getRequestHeaders($isDelete = true),
             CURLOPT_CUSTOMREQUEST => "DELETE",
             CURLOPT_RETURNTRANSFER => 1,
             CURLOPT_URL => (rtrim($this->baseUrl, "/")."/".rtrim(ltrim($path, "/"))),
@@ -141,8 +145,14 @@ class WebClient {
         return $result;
     }
 
-    private function getRequestHeaders() {
-        $headers = array("Content-Type: application/json; charset=utf-8","Accept:application/json");
+    private function getRequestHeaders($isDelete = false) {
+        
+        if($isDelete){
+            // Bug with mediasilo - not deleting asset because of that header! 
+            $headers = array(/*"Content-Type: application/json; charset=utf-8",*/"Accept: application/json, text/plain");
+        } else {
+            $headers = array("Content-Type: application/json; charset=utf-8","Accept: application/json, text/plain");
+        }
         $hostHeader = "MediaSiloHostContext:".$this->host;
         array_push($headers, $hostHeader);
         if ($this->useSession) {
@@ -153,6 +163,23 @@ class WebClient {
             array_push($headers, $authHeader);
         }
 
+        // pass through cookies
+        $cookieHeader = "Cookie: ";
+        $delim = "";
+        foreach ($_COOKIE as $key => $val) {
+            $cookieHeader = $cookieHeader . $delim . $key . "=" . $val;
+            $delim = "; ";
+        }
+        array_push($headers, $cookieHeader);
+
+        // pass through our nonce header if it's sent
+        if(function_exists('apache_request_headers')){
+            $sentHeaders = \apache_request_headers();
+            $n1 = isset($sentHeaders["n1"]) ? $sentHeaders["n1"] : false ;
+            if (isset($n1) && strlen($n1) > 0) {
+                array_push($headers, "n1: " . $n1);
+            }
+        }
         return $headers;
     }
 
