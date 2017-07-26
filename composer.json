@@ -1,5 +1,5 @@
 {
-    "name" : "h3christophe/phoenix-php-sdk",
+    "name" : "XPlatform-Consulting/phoenix-php-sdk",
     "autoload": {
         "psr-0": {
             "mediasilo\\": "src/"
